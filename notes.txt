@@ -1,0 +1,12 @@
+# init node
+-> npm init -y
+
+install dependencies
+-> npm install express swagger-autogen
+-> npm install swagger-ui-express
+
+Run the Swagger documentation generator
+-> node swagger.js
+
+run app:
+-> node index.js
