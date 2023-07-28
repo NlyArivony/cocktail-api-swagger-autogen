@@ -30,3 +30,6 @@ app.put('/api/cocktails/:id', cocktailController.updateCocktailById);
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
+
+// Route to update a cocktail by ID using PATCH
+app.patch('/api/cocktails/:id', cocktailController.patchCocktailById);

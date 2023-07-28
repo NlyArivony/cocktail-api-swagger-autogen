@@ -95,3 +95,33 @@ exports.updateCocktailById = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+// Controller to update a cocktail by ID using PATCH
+exports.patchCocktailById = async (req, res) => {
+    const { id } = req.params;
+    const { name, ingredients } = req.body;
+
+    try {
+        const cocktail = await Cocktail.findByPk(id);
+        if (!cocktail) {
+            return res.status(404).json({ error: 'Cocktail not found' });
+        }
+
+        const updatedFields = {};
+        if (name) {
+            updatedFields.name = name;
+        }
+        if (ingredients) {
+            updatedFields.ingredients = ingredients.join(', ');
+        }
+
+        await cocktail.update(updatedFields);
+
+        const updatedCocktail = await Cocktail.findByPk(id);
+        const serializedCocktail = serializeCocktail(updatedCocktail);
+        res.json(serializedCocktail);
+    } catch (error) {
+        console.error('Error updating the cocktail in the database:', error.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
