@@ -5,6 +5,7 @@ install dependencies
 -> npm install express swagger-autogen
 -> npm install swagger-ui-express
 -> npm install sqlite3
+-> npm install sequelize
 
 Run the Swagger documentation generator
 -> node swagger.js

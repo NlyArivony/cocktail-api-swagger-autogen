@@ -2,113 +2,63 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
-const swaggerAutogen = require('swagger-autogen')();
-const db = require('./database');
+const swaggerAutogen = require('swagger-autogen');
+const { sequelize, Cocktail } = require('./models');
 
-/**
- * @swagger
- * /api/cocktails:
- *   get:
- *     summary: Get all cocktails
- *     description: Retrieve a list of all cocktails.
- *     responses:
- *       200:
- *         description: A list of cocktails.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Cocktail'
- *   post:
- *     summary: Create a new cocktail
- *     description: Add a new cocktail to the database.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Cocktail'
- *     responses:
- *       201:
- *         description: The created cocktail.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Cocktail'
- */
+// Set up Sequelize and sync the database
+(async () => {
+    try {
+        await sequelize.sync(); // This will create the "Cocktail" table if it doesn't exist
+        console.log('Database synced successfully');
+    } catch (error) {
+        console.error('Error syncing the database:', error);
+    }
+})();
 
 // Route to get all cocktails
-app.get('/api/cocktails', (req, res) => {
-    const sql = 'SELECT * FROM cocktails';
-    db.all(sql, [], (err, rows) => {
-        if (err) {
-            console.error('Error querying the database:', err.message);
-            res.status(500).json({ error: 'Internal server error' });
-        } else {
-            res.json(rows);
-        }
-    });
+app.get('/api/cocktails', async (req, res) => {
+    try {
+        const cocktails = await Cocktail.findAll();
+        res.json(cocktails);
+    } catch (error) {
+        console.error('Error querying the database:', error.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Route to add a new cocktail
-app.post('/api/cocktails', express.json(), (req, res) => {
+app.post('/api/cocktails', express.json(), async (req, res) => {
     const { name, ingredients } = req.body;
     if (!name || !ingredients) {
         return res.status(400).json({ error: 'Name and ingredients are required' });
     }
 
-    const sql = 'INSERT INTO cocktails (name, ingredients) VALUES (?, ?)';
-    db.run(sql, [name, ingredients.join(', ')], function (err) {
-        if (err) {
-            console.error('Error adding the cocktail to the database:', err.message);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        const newCocktail = {
-            id: this.lastID,
+    try {
+        const newCocktail = await Cocktail.create({
             name: name,
-            ingredients: ingredients,
-        };
+            ingredients: ingredients.join(', '),
+        });
         res.status(201).json(newCocktail);
-    });
+    } catch (error) {
+        console.error('Error adding the cocktail to the database:', error.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-/**
- * @swagger
- * /api/cocktails/{id}:
- *   get:
- *     summary: Get a cocktail by ID
- *     description: Retrieve a single cocktail based on its ID.
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID of the cocktail to retrieve.
- *     responses:
- *       200:
- *         description: The requested cocktail.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Cocktail'
- */
-
 // Route to get a single cocktail by ID
-app.get('/api/cocktails/:id', (req, res) => {
+app.get('/api/cocktails/:id', async (req, res) => {
     const { id } = req.params;
-    const sql = 'SELECT * FROM cocktails WHERE id = ?';
-    db.get(sql, [id], (err, row) => {
-        if (err) {
-            console.error('Error querying the database:', err.message);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        if (!row) {
+
+    try {
+        const cocktail = await Cocktail.findByPk(id);
+        if (!cocktail) {
             return res.status(404).json({ error: 'Cocktail not found' });
         }
-        res.json(row);
-    });
+        res.json(cocktail);
+    } catch (error) {
+        console.error('Error querying the database:', error.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Swagger configuration
